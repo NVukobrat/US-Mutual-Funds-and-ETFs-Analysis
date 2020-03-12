@@ -158,3 +158,7 @@ Datasets will be updated every one or two semesters, hopefully with additional i
 ##### Annual [Treynor Ratio](https://www.investopedia.com/terms/t/treynorratio.asp)
 - **fund_treynor_ratio_3years** - Treynor Ratio 3 years
 - **category_treynor_ratio_3years** - Treynor Ratio 3 years
+- **fund_treynor_ratio_5years** - Treynor Ratio 5 years
+- **category_treynor_ratio_5years** - Treynor Ratio 5 years
+- **fund_treynor_ratio_10years** - Treynor Ratio 10 years
+- **category_treynor_ratio_10years** - Treynor Ratio 10 years

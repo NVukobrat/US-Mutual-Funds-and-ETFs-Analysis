@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 
@@ -21,11 +22,9 @@ def clean(df):
     df.replace('nan', 'NaN', inplace=True)
     df.replace('NaN', np.nan, inplace=True)
 
-    # num_mean = df.select_dtypes(np.number).mean()
     num_mean = df.select_dtypes(np.number)
     num_mean.join(df['fund_treynor_ratio_3years'])  # As consequence of too many NaN values
     num_mean.join(df['category_treynor_ratio_5years'])  # As consequence of too many NaN values
-    # num_mean = num_mean.mean()
 
     str_mean = df[df.columns.difference(num_mean.columns)]
     str_mean = str_mean.drop('fund_treynor_ratio_3years', axis=1)  # As consequence of too many NaN values
@@ -44,16 +43,38 @@ def clean(df):
         stack.loc[null_stack.index] = ran
         df[col] = stack.values
 
-    # for col in str_mean:
-    #     df[col] = le.inverse_transform(str_mean[col])
+    return df
+
+
+def correlation_clean(df, threshold=(-0.9, -0.3, 0.3, 0.9)):
+    # Fix for non-numerical (or too many nan) columns
+    col_corr = {
+        'fund_name', 'fund_extended_name', 'category', 'fund_family', 'net_assets', 'legal_type', 'investment', 'size',
+        'currency', 'rating_us_government', 'fund_treynor_ratio_3years', 'category_treynor_ratio_5years',
+    }
+    for col in col_corr:
+        del df[col]
+
+    # Chose numerical columns
+    corr_matrix = df.corr()
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i):
+            if (not threshold[0] <= corr_matrix.iloc[i, j] <= threshold[1] and
+                not threshold[2] <= corr_matrix.iloc[i, j] <= threshold[3]
+            ) and (corr_matrix.columns[j] not in col_corr):
+                colname = corr_matrix.columns[i]
+                col_corr.add(colname)
+                if colname in df.columns:
+                    del df[colname]
 
     return df
 
 
-def hist_bar_plot(df, rc_num=(2, 6), size=(16 * 3, 9 * 3)):
+def hist_bar_plot(df, rc_num=(2, 6), size=(16 * 3, 9 * 3), unique=True):
     # Chose adequate columns for visualization
-    num_unique_col = df.nunique()
-    df = df[[col for col in df if 1 < num_unique_col[col] < 50]]
+    if unique:
+        num_unique_col = df.nunique()
+        df = df[[col for col in df if 1 < num_unique_col[col] < 50]]
 
     # Create Hist and Bar plots
     plt.figure(figsize=size)
@@ -74,11 +95,38 @@ def hist_bar_plot(df, rc_num=(2, 6), size=(16 * 3, 9 * 3)):
     plt.show()
 
 
+def corr_mtx(df, fig_size=50, unique=True):
+    # Chose adequate columns for visualization
+    if unique:
+        num_unique_col = df.nunique()
+        df = df[[col for col in df if num_unique_col[col] > 1]]
+
+    f, ax = plt.subplots(figsize=(fig_size, fig_size))
+    corr = df.corr()
+    sns.heatmap(corr, mask=np.zeros_like(corr, dtype=np.bool), cmap=sns.diverging_palette(220, 10, as_cmap=True),
+                square=True, ax=ax)
+    plt.show()
+
+
+def scatter_mtx(df, figsize=50):
+    df = df.select_dtypes(np.number)
+    if len(list(df)) > 20:
+        df = df[list(df)[:20]]
+    scatter_matrix = pd.plotting.scatter_matrix(df, alpha=0.2, figsize=(figsize, figsize), diagonal='kde')
+    for ax in scatter_matrix.ravel():
+        ax.set_xlabel(ax.get_xlabel(), fontsize=20, rotation=90)
+        ax.set_ylabel(ax.get_ylabel(), fontsize=20, rotation=0)
+    plt.show()
+
+
 def main():
     pre_config()
     df_etf, df_mf = load_dataset()
+    df_etf = correlation_clean(df_etf)
     # df_etf = clean(df_etf)
-    hist_bar_plot(df_etf)
+    hist_bar_plot(df_etf, unique=False)
+    corr_mtx(df_etf, unique=False)
+    scatter_mtx(df_etf)
 
 
 if __name__ == '__main__':
