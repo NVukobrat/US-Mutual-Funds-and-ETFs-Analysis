@@ -24,6 +24,7 @@ Datasets will be updated every one or two semesters, hopefully with additional i
 - Ratings
 - Returns
 - Returns by year
+- Portfolio
 - Alpha Returns
 - Beta Returns
 - Mean Annual Returns
@@ -33,6 +34,42 @@ Datasets will be updated every one or two semesters, hopefully with additional i
 - Annual Treynor Ratio
 
 ## Columns
+### ETFs
+##### Basic Info
+- **legal_type** - Legal type of a fund
+
+### MF
+##### Basic Info
+- **years_up** - Years up
+- **years_down** - Years down
+- **inception_date** - The date on which the fund began its operations.
+- **bond_maturity** - A bond's term to maturity is the length of time during which the owner will receive interest payments on the investment. 
+- **bond_duration** - Duration is a measure of the sensitivity of the price of a bond or other debt instrument to a change in interest rates.
+- **median_market_cap** - The midpoint of market capitalization (market price multiplied by the number of shares outstanding) of the stocks in a portfolio. Half the stocks in the portfolio will have higher market capitalization; half will have lower.
+
+##### Ratings
+- **morningstar_rating** - Measure of a fund's general return, relative to similar funds.
+- **morningstar_risk_rating** - Measure of a fund's [risk-adjusted](https://www.investopedia.com/terms/m/morningstarriskrating.asp) return, relative to similar funds.
+- **morningstar_return_rating** - Measure of a fund's return rating, relative to similar funds.
+
+##### Returns by year
+- **category_return_2018** - Returns 2018
+- **category_return_2017** - Returns 2017
+- **category_return_2016** - Returns 2016
+- **category_return_2015** - Returns 2015
+- **category_return_2014** - Returns 2014
+- **category_return_2013** - Returns 2013
+- **category_return_2012** - Returns 2012
+- **category_return_2011** - Returns 2011
+- **category_return_2010** - Returns 2010
+
+##### Portfolio
+- **portfolio_cash** - Portfolio Cash
+- **portfolio_preferred** - Portfolio Preferred
+- **portfolio_convertable** - Portfolio Convertible
+- **portfolio_others** - Portfolio Others
+
+### Both
 ##### Basic Info
 - **fund_name** - Name of the investment fund
 - **fund_extended_name** - Full name of the investment fund
@@ -41,7 +78,6 @@ Datasets will be updated every one or two semesters, hopefully with additional i
 - **net_assets** - Total net assets possessed by fund
 - **ytd_return** - Year to date (YTD) returns on portfolio
 - **fund_yield** - Fund [Yield](https://www.investopedia.com/terms/m/mutual-fund-yield.asp) (measure of the income return of a fund)
-- **legal_type** - Legal type of a fund
 - **investment** - Investment type/strategy 
 - **size** - Size of fund
 - **currency** - Default fund currency

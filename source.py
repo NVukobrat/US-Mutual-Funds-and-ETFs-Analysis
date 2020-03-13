@@ -49,11 +49,15 @@ def clean(df):
 def correlation_clean(df, threshold=(-0.9, -0.3, 0.3, 0.9)):
     # Fix for non-numerical (or too many nan) columns
     col_corr = {
+        # ETFs
         'fund_name', 'fund_extended_name', 'category', 'fund_family', 'net_assets', 'legal_type', 'investment', 'size',
         'currency', 'rating_us_government', 'fund_treynor_ratio_3years', 'category_treynor_ratio_5years',
     }
-    for col in col_corr:
-        del df[col]
+    try:
+        for col in col_corr:
+            del df[col]
+    except KeyError:
+        pass  # legal_type
 
     # Chose numerical columns
     corr_matrix = df.corr()
@@ -85,8 +89,9 @@ def hist_bar_plot(df, rc_num=(2, 6), size=(16 * 3, 9 * 3), unique=True):
             df_column.hist()
         else:
             df_column.value_counts().plot.bar()
-        plt.title(col)
-        plt.xticks(rotation=30)
+        plt.title(col, fontsize=25)
+        plt.xticks(rotation=30, fontsize=30)
+        plt.yticks(fontsize=30)
         plt.ylabel('counts')
 
         if i == 10:
@@ -96,6 +101,7 @@ def hist_bar_plot(df, rc_num=(2, 6), size=(16 * 3, 9 * 3), unique=True):
 
 
 def corr_mtx(df, fig_size=50, unique=True):
+    sns.set(font_scale=4.0)
     # Chose adequate columns for visualization
     if unique:
         num_unique_col = df.nunique()
@@ -106,27 +112,46 @@ def corr_mtx(df, fig_size=50, unique=True):
     sns.heatmap(corr, mask=np.zeros_like(corr, dtype=np.bool), cmap=sns.diverging_palette(220, 10, as_cmap=True),
                 square=True, ax=ax)
     plt.show()
+    sns.set(font_scale=2.0)
 
 
-def scatter_mtx(df, figsize=50):
+def scatter_mtx(df, figsize=50, cap=10):
     df = df.select_dtypes(np.number)
-    if len(list(df)) > 20:
-        df = df[list(df)[:20]]
+    if len(list(df)) > cap:
+        df = df[list(df)[:cap]]
     scatter_matrix = pd.plotting.scatter_matrix(df, alpha=0.2, figsize=(figsize, figsize), diagonal='kde')
     for ax in scatter_matrix.ravel():
-        ax.set_xlabel(ax.get_xlabel(), fontsize=20, rotation=90)
-        ax.set_ylabel(ax.get_ylabel(), fontsize=20, rotation=0)
+        ax.set_xlabel(ax.get_xlabel(), fontsize=30, rotation=90)
+        ax.set_ylabel(ax.get_ylabel(), fontsize=30, rotation=0)
     plt.show()
+
+
+def types(df):
+    for c, t in zip(df, df.dtypes):
+        if np.issubdtype(t, np.number):
+            print("Num", c, t)
+        else:
+            print("Str", c, t)
 
 
 def main():
     pre_config()
     df_etf, df_mf = load_dataset()
+
+    # ETFs analysis
+    hist_bar_plot(df_etf)
     df_etf = correlation_clean(df_etf)
-    # df_etf = clean(df_etf)
-    hist_bar_plot(df_etf, unique=False)
     corr_mtx(df_etf, unique=False)
     scatter_mtx(df_etf)
+
+    # MF analysis
+    hist_bar_plot(df_mf)
+    df_mf = correlation_clean(df_mf, threshold=(-0.9, -0.6, 0.6, 0.9))
+    corr_mtx(df_mf, unique=False)
+    scatter_mtx(df_mf, cap=20)
+
+    # ML
+    # df_etf = clean(df_etf)
 
 
 if __name__ == '__main__':
