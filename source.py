@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -10,8 +12,8 @@ def pre_config():
 
 
 def load_dataset():
-    df_etf = pd.read_csv('dataset/ETFs.csv', index_col=False)
-    df_mf = pd.read_csv('dataset/Mutual Funds.csv', index_col=False)
+    df_etf = pd.read_csv('dataset/ETFs.csv', index_col=False, low_memory=False)
+    df_mf = pd.read_csv('dataset/Mutual Funds.csv', index_col=False, low_memory=False)
 
     return df_etf, df_mf
 
@@ -117,20 +119,60 @@ def scatter_mtx(df, figsize=50, cap=10):
     plt.show()
 
 
-# TODO: Use for ML part of the project
-def clean(df):
+def gaussian_clean(df, dataset_type):
+    """
+
+    :param df:
+    :param dataset_type: etf or mf.
+    :return:
+    """
+    # Fix NaN
     df.replace('', 'NaN', inplace=True)
     df.replace('nan', 'NaN', inplace=True)
     df.replace('NaN', np.nan, inplace=True)
 
-    num_mean = df.select_dtypes(np.number)
-    num_mean.join(df['fund_treynor_ratio_3years'])  # As consequence of too many NaN values
-    num_mean.join(df['category_treynor_ratio_5years'])  # As consequence of too many NaN values
+    # As consequence of too many NaN values
+    migrate_columns = [
+        'fund_treynor_ratio_3years',
+    ]
+    if dataset_type == 'etf':
+        migrate_columns += [
+            'category_treynor_ratio_5years',
+        ]
+    elif dataset_type == 'mf':
+        migrate_columns += [
+            'price_cashflow',
+            'price_sales',
+            'price_earnings',
+            'median_market_cap',
+            'fund_treynor_ratio_5years',
+            'fund_treynor_ratio_10years',
+        ]
 
+    num_mean = df.select_dtypes(np.number)
+    for col in migrate_columns:
+        num_mean.join(df[col])
+
+    low_info_categorical_columns = [
+        'category',
+        'currency',
+        'fund_extended_name',
+        'fund_family',
+        'fund_name',
+        'legal_type',
+    ]
+    migrate_columns += low_info_categorical_columns
     str_mean = df[df.columns.difference(num_mean.columns)]
-    str_mean = str_mean.drop('fund_treynor_ratio_3years', axis=1)  # As consequence of too many NaN values
-    str_mean = str_mean.drop('category_treynor_ratio_5years', axis=1)  # As consequence of too many NaN values
-    str_mean.replace(np.nan, 'NaN', inplace=True)
+    for col in migrate_columns:
+        str_mean = str_mean.drop(col, axis=1)
+    # str_mean.replace(np.nan, 'NaN', inplace=True)
+
+    for col in list(str_mean):
+        unique = str_mean[col].unique()
+        for value in str_mean[col]:
+            if value is np.nan:
+                random.choice()
+
     le = LabelEncoder()
     for col in str_mean:
         df[col] = le.fit_transform(str_mean[col])
@@ -151,6 +193,15 @@ def main():
     pre_config()
     df_etf, df_mf = load_dataset()
 
+    # hist_bar_plot(df_etf)
+
+    df_etf = gaussian_clean(df_etf, 'etf')
+    df_mf = gaussian_clean(df_mf, 'mf')
+
+    hist_bar_plot(df_etf)
+
 
 if __name__ == '__main__':
     main()
+    # TODO:
+    # - Test different model accuracy with and without correlation clean and regular clean functions.
