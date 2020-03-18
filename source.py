@@ -4,11 +4,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
 
 def pre_config():
     plt.rcParams.update({'font.size': 20})
+    random.seed(1)
 
 
 def load_dataset():
@@ -149,33 +150,56 @@ def gaussian_clean(df, dataset_type):
             'fund_treynor_ratio_10years',
         ]
 
+    # Join together numerical columns
     num_mean = df.select_dtypes(np.number)
     for col in migrate_columns:
         num_mean.join(df[col])
 
+    # Columns with low-value information (ignored during initial analysis)
     low_info_categorical_columns = [
         'category',
         'currency',
         'fund_extended_name',
         'fund_family',
         'fund_name',
-        'legal_type',
     ]
+    if dataset_type == 'etf':
+        low_info_categorical_columns += [
+            'legal_type',
+        ]
+    elif dataset_type == 'mf':
+        low_info_categorical_columns += [
+            'inception_date',
+        ]
+
+    # Join together categorical (without low-value) columns
     migrate_columns += low_info_categorical_columns
     str_mean = df[df.columns.difference(num_mean.columns)]
     for col in migrate_columns:
         str_mean = str_mean.drop(col, axis=1)
-    # str_mean.replace(np.nan, 'NaN', inplace=True)
 
+    # Populate empty values in categorical columns
     for col in list(str_mean):
         unique = str_mean[col].unique()
-        for value in str_mean[col]:
+        unique = [x for x in unique if str(x) != 'nan']
+        for i, value in enumerate(str_mean[col]):
             if value is np.nan:
-                random.choice()
+                choice = random.choice(unique)
+                str_mean[col].iloc[i] = choice
 
+    # Encode categorical columns
     le = LabelEncoder()
     for col in str_mean:
         df[col] = le.fit_transform(str_mean[col])
+
+    # One-hot encode categorical columns
+    ohe = OneHotEncoder()
+    for col in str_mean:
+        unique = str_mean[col].unique()
+        unique = [col + "_" + x for x in unique if str(x) != 'nan']
+        enc_df = pd.DataFrame(ohe.fit_transform(df[[col]]).toarray(), columns=unique)
+        df = df.drop(col, axis=1)
+        df = df.join(enc_df)
 
     mu = num_mean.quantile(0)
     sigma = num_mean.std(axis=0)
@@ -186,19 +210,25 @@ def gaussian_clean(df, dataset_type):
         stack.loc[null_stack.index] = ran
         df[col] = stack.values
 
-    return df
+    # Clean
+    df_dropped = pd.DataFrame()
+    for col in low_info_categorical_columns:
+        df_dropped[col] = df[col].copy()
+        df = df.drop(col, axis=1)
+
+    return df, df_dropped
 
 
 def main():
     pre_config()
     df_etf, df_mf = load_dataset()
 
-    # hist_bar_plot(df_etf)
-
-    df_etf = gaussian_clean(df_etf, 'etf')
-    df_mf = gaussian_clean(df_mf, 'mf')
+    df_etf, df_etf_dropped = gaussian_clean(df_etf, 'etf')
+    df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
 
     hist_bar_plot(df_etf)
+    hist_bar_plot(df_mf)
+    # TODO: Continue on ML part. Use this hist as next visualization.
 
 
 if __name__ == '__main__':
