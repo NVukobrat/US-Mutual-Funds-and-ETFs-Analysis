@@ -4,12 +4,17 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+from sklearn import metrics
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.model_selection import train_test_split
+from sklearn import linear_model, svm
+
+rnd_seed_state = 1
 
 
 def pre_config():
     plt.rcParams.update({'font.size': 20})
-    random.seed(1)
+    random.seed(rnd_seed_state)
 
 
 def load_dataset():
@@ -153,7 +158,7 @@ def gaussian_clean(df, dataset_type):
     # Join together numerical columns
     num_mean = df.select_dtypes(np.number)
     for col in migrate_columns:
-        num_mean.join(df[col])
+        num_mean = num_mean.join(pd.to_numeric(df[col], errors="coerce"))
 
     # Columns with low-value information (ignored during initial analysis)
     low_info_categorical_columns = [
@@ -173,9 +178,8 @@ def gaussian_clean(df, dataset_type):
         ]
 
     # Join together categorical (without low-value) columns
-    migrate_columns += low_info_categorical_columns
     str_mean = df[df.columns.difference(num_mean.columns)]
-    for col in migrate_columns:
+    for col in low_info_categorical_columns:
         str_mean = str_mean.drop(col, axis=1)
 
     # Populate empty values in categorical columns
@@ -219,14 +223,45 @@ def gaussian_clean(df, dataset_type):
     return df, df_dropped
 
 
+def dataset_split(df, index_col):
+    train, test = train_test_split(df, test_size=0.2, random_state=rnd_seed_state)
+    y_train = train[index_col].copy()
+    del train[index_col]
+
+    y_test = test[index_col].copy()
+    del test[index_col]
+
+    return train, test, y_train, y_test
+
+
 def main():
     pre_config()
     df_etf, df_mf = load_dataset()
 
     df_etf, df_etf_dropped = gaussian_clean(df_etf, 'etf')
-    df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
+    # df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
 
-    # TODO: Continue on ML part.
+    x_train, x_test, y_train, y_test = dataset_split(df_etf, index_col="ytd_return")
+    classifiers = [
+        svm.SVR(),
+        # linear_model.SGDRegressor(),
+        # linear_model.BayesianRidge(),
+        # linear_model.LassoLars(),
+        # linear_model.ARDRegression(),
+        # linear_model.PassiveAggressiveRegressor(),
+        # linear_model.TheilSenRegressor(),
+        # linear_model.LinearRegression(),
+    ]
+    for model in classifiers:
+        print(model)
+        clf = model
+        clf.fit(x_train, y_train)
+        y_pred = clf.predict(x_test)
+        evs = metrics.explained_variance_score(y_test, y_pred)
+        print(evs)
+    # TODO:
+    # - Continue on Regression metrics
+    # - https://scikit-learn.org/stable/modules/model_evaluation.html#regression-metrics
 
 
 if __name__ == '__main__':
