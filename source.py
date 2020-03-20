@@ -226,9 +226,7 @@ def main():
     df_etf, df_etf_dropped = gaussian_clean(df_etf, 'etf')
     df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
 
-    hist_bar_plot(df_etf)
-    hist_bar_plot(df_mf)
-    # TODO: Continue on ML part. Use this hist as next visualization.
+    # TODO: Continue on ML part.
 
 
 if __name__ == '__main__':
