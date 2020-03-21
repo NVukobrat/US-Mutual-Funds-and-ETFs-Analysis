@@ -282,9 +282,9 @@ def main():
         linear_model.SGDRegressor(),
         linear_model.BayesianRidge(),
         linear_model.LassoLars(),
-        linear_model.ARDRegression(),
+        # linear_model.ARDRegression(),
         linear_model.PassiveAggressiveRegressor(),
-        linear_model.TheilSenRegressor(),
+        # linear_model.TheilSenRegressor(),
         linear_model.LinearRegression(),
     ]
     x_train, x_test, y_train, y_test = dataset_split(df_etf, index_col="ytd_return")
@@ -298,3 +298,4 @@ if __name__ == '__main__':
     main()
     # TODO:
     # - Test different model accuracy with and without correlation clean and regular clean functions.
+    # - Result comparison of different models
