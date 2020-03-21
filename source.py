@@ -234,15 +234,47 @@ def dataset_split(df, index_col):
     return train, test, y_train, y_test
 
 
+def run_models(regressors, x_train, x_test, y_train, y_test):
+    print("Running models...")
+    for model in regressors:
+        print("\tModel: {}".format(type(model).__name__))
+        clf = model
+        clf.fit(x_train, y_train)
+        y_pred = clf.predict(x_test)
+        result_metrics(y_test, y_pred)
+
+
+def result_metrics(actual, predicted, print_adjust=50):
+    evs = metrics.explained_variance_score(actual, predicted)
+    print("\t\tExplained variance score ".ljust(print_adjust, '.') + " {}".format(evs))
+
+    me = metrics.max_error(actual, predicted)
+    print("\t\tMax error ".ljust(print_adjust, '-') + " {}".format(me))
+
+    mae = metrics.mean_absolute_error(actual, predicted)
+    print("\t\tMean absolute error ".ljust(print_adjust, '.') + " {}".format(mae))
+
+    mse = metrics.mean_squared_error(actual, predicted)
+    print("\t\tMean squared error ".ljust(print_adjust, '-') + " {}".format(mse))
+
+    mae = metrics.median_absolute_error(actual, predicted)
+    print("\t\tMedian absolute error ".ljust(print_adjust, '.') + " {}".format(mae))
+
+    r2 = metrics.r2_score(actual, predicted)
+    print("\t\tR² score, the coefficient of determination ".ljust(print_adjust, '-') + " {}".format(r2))
+
+    mtd = metrics.mean_tweedie_deviance(actual, predicted)
+    print("\t\tMean Poisson, Gamma, and Tweedie deviances: ".ljust(50, '.') + " {}".format(mtd))
+
+
 def main():
     pre_config()
     df_etf, df_mf = load_dataset()
 
     df_etf, df_etf_dropped = gaussian_clean(df_etf, 'etf')
-    # df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
+    df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
 
-    x_train, x_test, y_train, y_test = dataset_split(df_etf, index_col="ytd_return")
-    classifiers = [
+    regressors = [
         svm.SVR(),
         # linear_model.SGDRegressor(),
         # linear_model.BayesianRidge(),
@@ -250,18 +282,13 @@ def main():
         # linear_model.ARDRegression(),
         # linear_model.PassiveAggressiveRegressor(),
         # linear_model.TheilSenRegressor(),
-        # linear_model.LinearRegression(),
+        linear_model.LinearRegression(),
     ]
-    for model in classifiers:
-        print(model)
-        clf = model
-        clf.fit(x_train, y_train)
-        y_pred = clf.predict(x_test)
-        evs = metrics.explained_variance_score(y_test, y_pred)
-        print(evs)
-    # TODO:
-    # - Continue on Regression metrics
-    # - https://scikit-learn.org/stable/modules/model_evaluation.html#regression-metrics
+    x_train, x_test, y_train, y_test = dataset_split(df_etf, index_col="ytd_return")
+    run_models(regressors, x_train, x_test, y_train, y_test)
+
+    x_train, x_test, y_train, y_test = dataset_split(df_mf, index_col="ytd_return")
+    run_models(regressors, x_train, x_test, y_train, y_test)
 
 
 if __name__ == '__main__':
