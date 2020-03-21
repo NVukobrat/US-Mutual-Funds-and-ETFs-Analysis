@@ -1,4 +1,5 @@
 import random
+import time
 
 import numpy as np
 import pandas as pd
@@ -237,11 +238,13 @@ def dataset_split(df, index_col):
 def run_models(regressors, x_train, x_test, y_train, y_test):
     print("Running models...")
     for model in regressors:
+        start_time = time.time()
         print("\tModel: {}".format(type(model).__name__))
         clf = model
         clf.fit(x_train, y_train)
         y_pred = clf.predict(x_test)
         result_metrics(y_test, y_pred)
+        print("\tExecution time: %s seconds\n" % (round((time.time() - start_time), 3)))
 
 
 def result_metrics(actual, predicted, print_adjust=50):
@@ -276,12 +279,12 @@ def main():
 
     regressors = [
         svm.SVR(),
-        # linear_model.SGDRegressor(),
-        # linear_model.BayesianRidge(),
-        # linear_model.LassoLars(),
-        # linear_model.ARDRegression(),
-        # linear_model.PassiveAggressiveRegressor(),
-        # linear_model.TheilSenRegressor(),
+        linear_model.SGDRegressor(),
+        linear_model.BayesianRidge(),
+        linear_model.LassoLars(),
+        linear_model.ARDRegression(),
+        linear_model.PassiveAggressiveRegressor(),
+        linear_model.TheilSenRegressor(),
         linear_model.LinearRegression(),
     ]
     x_train, x_test, y_train, y_test = dataset_split(df_etf, index_col="ytd_return")
