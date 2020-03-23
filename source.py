@@ -235,39 +235,102 @@ def dataset_split(df, index_col):
     return train, test, y_train, y_test
 
 
-def run_models(regressors, x_train, x_test, y_train, y_test):
+def run_models(regressors, x_train, x_test, y_train, y_test, res):
     print("Running models...")
     for model in regressors:
         start_time = time.time()
-        print("\tModel: {}".format(type(model).__name__))
+        model_name = type(model).__name__
+        print("\tModel: {}".format(model_name))
         clf = model
         clf.fit(x_train, y_train)
         y_pred = clf.predict(x_test)
-        result_metrics(y_test, y_pred)
+        res[model_name] = {}
+        result_metrics(y_test, y_pred, res[model_name])
         print("\tExecution time: %s seconds\n" % (round((time.time() - start_time), 3)))
 
 
-def result_metrics(actual, predicted, print_adjust=50):
+def result_metrics(actual, predicted, res, print_adjust=50):
+    """
+    Explained variance score
+    If \hat{y} is the estimated target output,
+    y the corresponding (correct) target output, and Var is Variance, the
+    square of the standard deviation, then the explained variance is estimated
+    as follow:
+
+    explained\_{}variance(y, \hat{y}) = 1 - \frac{Var\{ y - \hat{y}\}}{Var\{y\}}
+
+    The best possible score is 1.0, lower values are worse.
+
+    //TODO: Continue on documentation.
+
+    :param actual:
+    :param predicted:
+    :param print_adjust:
+    :return:
+    """
     evs = metrics.explained_variance_score(actual, predicted)
     print("\t\tExplained variance score ".ljust(print_adjust, '.') + " {}".format(evs))
+    res["EVS"] = evs
 
     me = metrics.max_error(actual, predicted)
     print("\t\tMax error ".ljust(print_adjust, '-') + " {}".format(me))
+    res["ME"] = me
 
-    mae = metrics.mean_absolute_error(actual, predicted)
-    print("\t\tMean absolute error ".ljust(print_adjust, '.') + " {}".format(mae))
+    mean_ae = metrics.mean_absolute_error(actual, predicted)
+    print("\t\tMean absolute error ".ljust(print_adjust, '.') + " {}".format(mean_ae))
+    res["MeanAE"] = mean_ae
 
     mse = metrics.mean_squared_error(actual, predicted)
     print("\t\tMean squared error ".ljust(print_adjust, '-') + " {}".format(mse))
+    res["MSE"] = mse
 
-    mae = metrics.median_absolute_error(actual, predicted)
-    print("\t\tMedian absolute error ".ljust(print_adjust, '.') + " {}".format(mae))
+    median_ae = metrics.median_absolute_error(actual, predicted)
+    print("\t\tMedian absolute error ".ljust(print_adjust, '.') + " {}".format(median_ae))
+    res["MedianAE"] = median_ae
 
     r2 = metrics.r2_score(actual, predicted)
     print("\t\tR² score, the coefficient of determination ".ljust(print_adjust, '-') + " {}".format(r2))
+    res["R2"] = r2
 
     mtd = metrics.mean_tweedie_deviance(actual, predicted)
     print("\t\tMean Poisson, Gamma, and Tweedie deviances: ".ljust(50, '.') + " {}".format(mtd))
+    res["MTD"] = mtd
+
+
+def visualize_results(res):
+    data = []
+    for k_fund, v_fund in res.items():
+        for k_alg, v_alg in res[k_fund].items():
+            for k_met, v_met in res[k_fund][k_alg].items():
+                data.append([k_fund, k_alg, k_met, v_met])
+    df = pd.DataFrame(data, columns=["Fund Type", "Model Name", "Metric", "Score"])
+
+    plt.figure(figsize=(40, 30))
+    for i, m in enumerate(df["Metric"].unique()):
+        plt.subplot(3, 3, i + 1)
+        df_etf = df[(df["Fund Type"] == "ETF") & (df["Metric"] == m)]
+        df_etf_lim_min = min(df_etf["Score"])
+        df_etf_lim_max = max(df_etf["Score"])
+
+        df_mf = df[(df["Fund Type"] == "MF") & (df["Metric"] == m)]
+        df_mf_lim_min = min(df_mf["Score"])
+        df_mf_lim_max = max(df_mf["Score"])
+
+        if df_etf_lim_max > df_mf_lim_max:
+            lim_max = df_mf_lim_max
+        else:
+            lim_max = df_etf_lim_max
+
+        if df_etf_lim_min < df_mf_lim_min:
+            lim_min = df_mf_lim_min
+        else:
+            lim_min = df_etf_lim_min
+
+        df_group = df[df["Metric"] == m]
+        lp = sns.lineplot(x="Model Name", y="Score", hue="Fund Type", data=df_group)
+        lp.set(ylim=(lim_min, lim_max))
+        plt.xticks(rotation=30)
+    plt.show()
 
 
 def main():
@@ -278,20 +341,26 @@ def main():
     df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
 
     regressors = [
-        svm.SVR(),
+        # svm.SVR(), #
         linear_model.SGDRegressor(),
         linear_model.BayesianRidge(),
         linear_model.LassoLars(),
-        # linear_model.ARDRegression(),
+        # linear_model.ARDRegression(), #
         linear_model.PassiveAggressiveRegressor(),
-        # linear_model.TheilSenRegressor(),
+        # linear_model.TheilSenRegressor(), #
         linear_model.LinearRegression(),
     ]
+    res = {
+        'ETF': {},
+        'MF': {},
+    }
     x_train, x_test, y_train, y_test = dataset_split(df_etf, index_col="ytd_return")
-    run_models(regressors, x_train, x_test, y_train, y_test)
+    run_models(regressors, x_train, x_test, y_train, y_test, res['ETF'])
 
     x_train, x_test, y_train, y_test = dataset_split(df_mf, index_col="ytd_return")
-    run_models(regressors, x_train, x_test, y_train, y_test)
+    run_models(regressors, x_train, x_test, y_train, y_test, res['MF'])
+
+    visualize_results(res)
 
 
 if __name__ == '__main__':
@@ -299,3 +368,4 @@ if __name__ == '__main__':
     # TODO:
     # - Test different model accuracy with and without correlation clean and regular clean functions.
     # - Result comparison of different models
+    # - Compare different metrics and explain them
