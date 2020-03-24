@@ -261,7 +261,8 @@ def result_metrics(actual, predicted, res, print_adjust=50):
 
     The best possible score is 1.0, lower values are worse.
 
-    //TODO: Continue on documentation.
+    Max error
+    
 
     :param actual:
     :param predicted:
@@ -298,6 +299,7 @@ def result_metrics(actual, predicted, res, print_adjust=50):
 
 
 def visualize_results(res):
+    # Restructure results
     data = []
     for k_fund, v_fund in res.items():
         for k_alg, v_alg in res[k_fund].items():
@@ -308,6 +310,8 @@ def visualize_results(res):
     plt.figure(figsize=(40, 30))
     for i, m in enumerate(df["Metric"].unique()):
         plt.subplot(3, 3, i + 1)
+
+        # Define limits
         df_etf = df[(df["Fund Type"] == "ETF") & (df["Metric"] == m)]
         df_etf_lim_min = min(df_etf["Score"])
         df_etf_lim_max = max(df_etf["Score"])
@@ -326,9 +330,18 @@ def visualize_results(res):
         else:
             lim_min = df_etf_lim_min
 
+        if lim_min == 0 or lim_max == 0:
+            pass
+        elif lim_min * 10 < lim_max:
+            lim_max = lim_min * 10
+        elif lim_max * 10 < lim_min:
+            lim_min = lim_max * 10
+
+        # Plot config
         df_group = df[df["Metric"] == m]
         lp = sns.lineplot(x="Model Name", y="Score", hue="Fund Type", data=df_group)
         lp.set(ylim=(lim_min, lim_max))
+        lp.set_title(m)
         plt.xticks(rotation=30)
     plt.show()
 
@@ -341,13 +354,13 @@ def main():
     df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
 
     regressors = [
-        # svm.SVR(), #
+        svm.SVR(),  #
         linear_model.SGDRegressor(),
         linear_model.BayesianRidge(),
         linear_model.LassoLars(),
-        # linear_model.ARDRegression(), #
+        linear_model.ARDRegression(),  #
         linear_model.PassiveAggressiveRegressor(),
-        # linear_model.TheilSenRegressor(), #
+        linear_model.TheilSenRegressor(),  #
         linear_model.LinearRegression(),
     ]
     res = {
