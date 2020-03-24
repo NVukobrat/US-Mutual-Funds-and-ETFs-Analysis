@@ -160,7 +160,10 @@ def gaussian_clean(df, dataset_type):
     # Join together numerical columns
     num_mean = df.select_dtypes(np.number)
     for col in migrate_columns:
-        num_mean = num_mean.join(pd.to_numeric(df[col], errors="coerce"))
+        try:  # Keys are defined to handle whole dataset
+            num_mean = num_mean.join(pd.to_numeric(df[col], errors="coerce"))
+        except KeyError:
+            pass
 
     # Columns with low-value information (ignored during initial analysis)
     low_info_categorical_columns = [
@@ -182,7 +185,10 @@ def gaussian_clean(df, dataset_type):
     # Join together categorical (without low-value) columns
     str_mean = df[df.columns.difference(num_mean.columns)]
     for col in low_info_categorical_columns:
-        str_mean = str_mean.drop(col, axis=1)
+        try:  # Keys are defined to handle whole dataset
+            str_mean = str_mean.drop(col, axis=1)
+        except KeyError:
+            pass
 
     # Populate empty values in categorical columns
     for col in list(str_mean):
@@ -219,8 +225,11 @@ def gaussian_clean(df, dataset_type):
     # Clean
     df_dropped = pd.DataFrame()
     for col in low_info_categorical_columns:
-        df_dropped[col] = df[col].copy()
-        df = df.drop(col, axis=1)
+        try:  # Keys are defined to handle whole dataset
+            df_dropped[col] = df[col].copy()
+            df = df.drop(col, axis=1)
+        except KeyError:
+            pass
 
     return df, df_dropped
 
@@ -463,7 +472,10 @@ def main():
     df_etf, df_mf = load_dataset()
 
     df_etf, df_etf_dropped = gaussian_clean(df_etf, 'etf')
+    df_etf = correlation_clean(df_etf)
+
     df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
+    df_mf = correlation_clean(df_mf, threshold=(-0.9, -0.6, 0.6, 0.9))
 
     regressors = [
         # svm.SVR(),  #
@@ -490,7 +502,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # TODO:
-    # - Test different model accuracy with and without correlation clean and regular clean functions.
-    # - Result comparison of different models
-    # - Compare different metrics and explain them
