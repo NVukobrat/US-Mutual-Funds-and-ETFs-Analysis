@@ -4,6 +4,7 @@ import time
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from IPython.display import Markdown, display
 from matplotlib import pyplot as plt
 from sklearn import metrics
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
@@ -251,7 +252,7 @@ def run_models(regressors, x_train, x_test, y_train, y_test, res):
 
 def result_metrics(actual, predicted, res, print_adjust=50):
     """
-    Explained variance score
+    ### Explained variance score
     If \hat{y} is the estimated target output,
     y the corresponding (correct) target output, and Var is Variance, the
     square of the standard deviation, then the explained variance is estimated
@@ -261,8 +262,100 @@ def result_metrics(actual, predicted, res, print_adjust=50):
 
     The best possible score is 1.0, lower values are worse.
 
-    Max error
-    
+    ### Max error
+    The max_error function computes the maximum residual error, a metric that captures
+    the worst case error between the predicted value and the true value. In a perfectly
+    fitted single output regression model, max_error would be 0 on the training set
+    and though this would be highly unlikely in the real world, this metric shows
+    the extent of error that the model had when it was fitted.
+
+    If \hat{y}_i is the predicted value of the i-th sample, and y_i is the
+    corresponding true value, then the max error is defined as:
+
+    \text{Max Error}(y, \hat{y}) = max(| y_i - \hat{y}_i |)
+
+    ### Mean absolute error
+    The mean_absolute_error function computes mean absolute error,
+    a risk metric corresponding to the expected value of the absolute error
+    loss or l1-norm loss.
+
+    If \hat{y}_i is the predicted value of the -th sample, and y_i is the
+    corresponding true value, then the mean absolute error (MAE) estimated
+    over n_{samples} is defined as:
+
+    \text{MAE}(y, \hat{y}) = \frac{1}{n_{\text{samples}}} \sum_{i=0}^{n_{\text{samples}}-1} \left| y_i - \hat{y}_i \right|.
+
+    ###  Mean squared error
+    The mean_squared_error function computes mean square error,
+    a risk metric corresponding to the expected value of the squared
+    (quadratic) error or loss.
+
+    If \hat{y}_i is the predicted value of the i-th sample,
+    and y_i is the corresponding true value, then the mean squared
+    error (MSE) estimated over n_{\text{samples}} is defined as:
+
+    \text{MSE}(y, \hat{y}) = \frac{1}{n_\text{samples}} \sum_{i=0}^{n_\text{samples} - 1} (y_i - \hat{y}_i)^2.
+
+    ### Median absolute error
+    The median_absolute_error is particularly interesting because
+    it is robust to outliers. The loss is calculated by taking the
+    median of all absolute differences between the target and the
+    prediction.
+
+    If \hat{y}_i is the predicted value of the i-th sample and y_i
+    is the corresponding true value, then the median absolute
+    error (MedAE) estimated over n_{\text{samples}} is defined as:
+
+    \text{MedAE}(y, \hat{y}) = \text{median}(\mid y_1 - \hat{y}_1 \mid, \ldots, \mid y_n - \hat{y}_n \mid).
+
+    ### R² score, the coefficient of determination
+    The r2_score function computes the coefficient of determination, usually denoted as R².
+
+    It represents the proportion of variance (of y) that has been
+    explained by the independent variables in the model. It provides
+    an indication of goodness of fit and therefore a measure of how
+    well unseen samples are likely to be predicted by the model,
+    through the proportion of explained variance.
+
+    As such variance is dataset dependent, R² may not be meaningfully
+    comparable across different datasets. Best possible score is 1.0
+    and it can be negative (because the model can be arbitrarily worse).
+    A constant model that always predicts the expected value of y,
+    disregarding the input features, would get a R² score of 0.0.
+
+    If \hat{y}_i is the predicted value of the i-th sample and y_i
+    is the corresponding true value for total  samples, the estimated
+    R² is defined as:
+
+    R^2(y, \hat{y}) = 1 - \frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{\sum_{i=1}^{n} (y_i - \bar{y})^2}
+
+    where \sum_{i=1}^{n} (y_i - \hat{y}_i)^2 = \sum_{i=1}^{n} \epsilon_i^2
+
+    Note that r2_score calculates unadjusted R² without correcting
+    for bias in sample variance of y.
+
+    ### Mean Poisson, Gamma, and Tweedie deviances
+    The mean_tweedie_deviance function computes the mean Tweedie
+    deviance error with a power parameter (p). This is a metric
+    that elicits predicted expectation values of regression targets.
+
+    If \hat{y}_i is the predicted value of the i-th sample, and y_i
+    is the corresponding true value, then the mean Tweedie deviance
+    error (D) for power p, estimated over n_{\text{samples}} is defined as:
+
+    \begin{split}\text{D}(y, \hat{y}) = \frac{1}{n_\text{samples}}
+    \sum_{i=0}^{n_\text{samples} - 1}
+    \begin{cases}
+    (y_i-\hat{y}_i)^2, & \text{for }p=0\text{ (Normal)}\\
+    2(y_i \log(y/\hat{y}_i) + \hat{y}_i - y_i),  & \text{for}p=1\text{ (Poisson)}\\
+    2(\log(\hat{y}_i/y_i) + y_i/\hat{y}_i - 1),  & \text{for}p=2\text{ (Gamma)}\\
+    2\left(\frac{\max(y_i,0)^{2-p}}{(1-p)(2-p)}-
+    \frac{y\,\hat{y}^{1-p}_i}{1-p}+\frac{\hat{y}^{2-p}_i}{2-p}\right),
+    & \text{otherwise}
+    \end{cases}\end{split}
+
+    ### Reference
+    https://scikit-learn.org/stable/modules/model_evaluation.html#regression-metrics
 
     :param actual:
     :param predicted:
@@ -307,6 +400,8 @@ def visualize_results(res):
                 data.append([k_fund, k_alg, k_met, v_met])
     df = pd.DataFrame(data, columns=["Fund Type", "Model Name", "Metric", "Score"])
 
+    # With Metric in focus
+    print_md("### Metrics")
     plt.figure(figsize=(40, 30))
     for i, m in enumerate(df["Metric"].unique()):
         plt.subplot(3, 3, i + 1)
@@ -345,6 +440,23 @@ def visualize_results(res):
         plt.xticks(rotation=30)
     plt.show()
 
+    # With Model in focus
+    print_md("### Models")
+    plt.figure(figsize=(40, 30))
+    for i, mn in enumerate(df["Model Name"].unique()):
+        plt.subplot(3, 3, i + 1)
+
+        # Plot config
+        df_group = df[df["Model Name"] == mn]
+        lp = sns.lineplot(x="Metric", y="Score", hue="Fund Type", data=df_group)
+        lp.set_title(mn)
+        plt.xticks(rotation=30)
+    plt.show()
+
+
+def print_md(string):
+    display(Markdown(string))
+
 
 def main():
     pre_config()
@@ -354,13 +466,13 @@ def main():
     df_mf, df_mf_dropped = gaussian_clean(df_mf, 'mf')
 
     regressors = [
-        svm.SVR(),  #
+        # svm.SVR(),  #
         linear_model.SGDRegressor(),
         linear_model.BayesianRidge(),
         linear_model.LassoLars(),
-        linear_model.ARDRegression(),  #
+        # linear_model.ARDRegression(),  #
         linear_model.PassiveAggressiveRegressor(),
-        linear_model.TheilSenRegressor(),  #
+        # linear_model.TheilSenRegressor(),  #
         linear_model.LinearRegression(),
     ]
     res = {
