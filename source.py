@@ -409,6 +409,10 @@ def visualize_results(res):
                 data.append([k_fund, k_alg, k_met, v_met])
     df = pd.DataFrame(data, columns=["Fund Type", "Model Name", "Metric", "Score"])
 
+    for col in ["Fund Type", "Model Name", "Metric"]:
+        sns.catplot(x=col, y="Score", kind="box", data=df, size=10, showfliers=False)
+        plt.show()
+
     # With Metric in focus
     print_md("### Metrics")
     plt.figure(figsize=(40, 30))
@@ -449,6 +453,12 @@ def visualize_results(res):
         plt.xticks(rotation=30)
     plt.show()
 
+    # ETFs in focus
+    visualize_results_fund(df, "Metric", "ETF")
+
+    # ETFs in focus
+    visualize_results_fund(df, "Metric", "MF")
+
     # With Model in focus
     print_md("### Models")
     plt.figure(figsize=(40, 30))
@@ -458,6 +468,26 @@ def visualize_results(res):
         # Plot config
         df_group = df[df["Model Name"] == mn]
         lp = sns.lineplot(x="Metric", y="Score", hue="Fund Type", data=df_group)
+        lp.set_title(mn)
+        plt.xticks(rotation=30)
+    plt.show()
+
+    # ETFs in focus
+    visualize_results_fund(df, "Model Name", "ETF")
+
+    # ETFs in focus
+    visualize_results_fund(df, "Model Name", "MF")
+
+
+def visualize_results_fund(df, focus_index, fund_type):
+    plt.figure(figsize=(40, 30))
+    for i, mn in enumerate(df[focus_index].unique()):
+        plt.subplot(3, 3, i + 1)
+
+        # Plot config
+        df_group = df[(df[focus_index] == mn) & (df["Fund Type"] == fund_type)]
+        lp = sns.barplot(x="Metric" if focus_index == "Model Name" else "Model Name",
+                         y="Score", hue="Fund Type", data=df_group)
         lp.set_title(mn)
         plt.xticks(rotation=30)
     plt.show()
@@ -491,10 +521,10 @@ def main():
         'ETF': {},
         'MF': {},
     }
-    x_train, x_test, y_train, y_test = dataset_split(df_etf, index_col="ytd_return")
+    x_train, x_test, y_train, y_test = dataset_split(df_etf, index_col="net_assets")
     run_models(regressors, x_train, x_test, y_train, y_test, res['ETF'])
 
-    x_train, x_test, y_train, y_test = dataset_split(df_mf, index_col="ytd_return")
+    x_train, x_test, y_train, y_test = dataset_split(df_mf, index_col="net_assets")
     run_models(regressors, x_train, x_test, y_train, y_test, res['MF'])
 
     visualize_results(res)
