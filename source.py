@@ -410,7 +410,7 @@ def visualize_results(res):
     df = pd.DataFrame(data, columns=["Fund Type", "Model Name", "Metric", "Score"])
 
     for col in ["Fund Type", "Model Name", "Metric"]:
-        sns.catplot(x=col, y="Score", kind="box", data=df, size=10, showfliers=False)
+        sns.catplot(x=col, y="Score", kind="box", data=df, height=10, showfliers=False)
         plt.show()
 
     # With Metric in focus
