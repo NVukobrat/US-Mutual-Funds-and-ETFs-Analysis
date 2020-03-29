@@ -7,7 +7,7 @@ import seaborn as sns
 from IPython.display import Markdown, display
 from matplotlib import pyplot as plt
 from sklearn import metrics
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn import linear_model, svm
 
@@ -409,9 +409,25 @@ def visualize_results(res):
                 data.append([k_fund, k_alg, k_met, v_met])
     df = pd.DataFrame(data, columns=["Fund Type", "Model Name", "Metric", "Score"])
 
-    for col in ["Fund Type", "Model Name", "Metric"]:
-        sns.catplot(x=col, y="Score", kind="box", data=df, height=10, showfliers=False)
-        plt.show()
+    # # Col-Score focus
+    # print_md("### Single column-score")
+    # fig, ax = plt.subplots(1, 3, figsize=(40, 15))
+    # for i, col in enumerate(["Fund Type", "Model Name", "Metric"]):
+    #     sns.catplot(x=col, y="Score", kind="box", data=df, ax=ax[i], height=20, showfliers=False)
+    #     plt.xticks(rotation=30)
+    # fig.show()
+
+    # Normalize Score ranges
+    min_max_scaler = MinMaxScaler()
+    groups = df.groupby("Metric", as_index=False)
+    for group in groups.groups.keys():
+        val = groups.get_group(group)["Score"].values.reshape(-1, 1)
+        scaled = min_max_scaler.fit_transform(val)
+        df.loc[df["Metric"] == group, "Score"] = scaled
+        print()
+
+    sns.catplot(x="Metric", y="Score", hue="Fund Type", col="Model Name", kind="bar", data=df, aspect=.6, height=10)
+    plt.show()
 
     # With Metric in focus
     print_md("### Metrics")
