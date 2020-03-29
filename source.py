@@ -409,14 +409,6 @@ def visualize_results(res):
                 data.append([k_fund, k_alg, k_met, v_met])
     df = pd.DataFrame(data, columns=["Fund Type", "Model Name", "Metric", "Score"])
 
-    # # Col-Score focus
-    # print_md("### Single column-score")
-    # fig, ax = plt.subplots(1, 3, figsize=(40, 15))
-    # for i, col in enumerate(["Fund Type", "Model Name", "Metric"]):
-    #     sns.catplot(x=col, y="Score", kind="box", data=df, ax=ax[i], height=20, showfliers=False)
-    #     plt.xticks(rotation=30)
-    # fig.show()
-
     # Normalize Score ranges
     min_max_scaler = MinMaxScaler()
     groups = df.groupby("Metric", as_index=False)
@@ -424,89 +416,50 @@ def visualize_results(res):
         val = groups.get_group(group)["Score"].values.reshape(-1, 1)
         scaled = min_max_scaler.fit_transform(val)
         df.loc[df["Metric"] == group, "Score"] = scaled
-        print()
 
-    sns.catplot(x="Metric", y="Score", hue="Fund Type", col="Model Name", kind="bar", data=df, aspect=.6, height=10)
+    visualize_with_focus(df, "Metric")
+    visualize_with_focus(df, "Model Name")
+
+
+def visualize_with_focus(df, focus_index):
+    print_md("### " + focus_index)
+    fund_catplot(df, focus_index)
+    fund_lineplot(df, focus_index)
+    fund_barplot(df, focus_index)
+
+
+def fund_catplot(df, focus_index):
+    sns.catplot(
+        x="Metric" if focus_index == "Model Name" else "Model Name",
+        y="Score", hue="Fund Type", col=focus_index, kind="bar", data=df, col_wrap=3, aspect=.6, height=10)
     plt.show()
 
-    # With Metric in focus
-    print_md("### Metrics")
+
+def fund_lineplot(df, focus_index):
     plt.figure(figsize=(40, 30))
-    for i, m in enumerate(df["Metric"].unique()):
+    for i, m in enumerate(df[focus_index].unique()):
         plt.subplot(3, 3, i + 1)
-
-        # Define limits
-        df_etf = df[(df["Fund Type"] == "ETF") & (df["Metric"] == m)]
-        df_etf_lim_min = min(df_etf["Score"])
-        df_etf_lim_max = max(df_etf["Score"])
-
-        df_mf = df[(df["Fund Type"] == "MF") & (df["Metric"] == m)]
-        df_mf_lim_min = min(df_mf["Score"])
-        df_mf_lim_max = max(df_mf["Score"])
-
-        if df_etf_lim_max > df_mf_lim_max:
-            lim_max = df_mf_lim_max
-        else:
-            lim_max = df_etf_lim_max
-
-        if df_etf_lim_min < df_mf_lim_min:
-            lim_min = df_mf_lim_min
-        else:
-            lim_min = df_etf_lim_min
-
-        if lim_min == 0 or lim_max == 0:
-            pass
-        elif lim_min * 10 < lim_max:
-            lim_max = lim_min * 10
-        elif lim_max * 10 < lim_min:
-            lim_min = lim_max * 10
-
-        # Plot config
-        df_group = df[df["Metric"] == m]
-        lp = sns.lineplot(x="Model Name", y="Score", hue="Fund Type", data=df_group)
-        lp.set(ylim=(lim_min, lim_max))
+        df_group = df[df[focus_index] == m]
+        lp = sns.lineplot(x="Metric" if focus_index == "Model Name" else "Model Name",
+                          y="Score", hue="Fund Type", data=df_group)
         lp.set_title(m)
         plt.xticks(rotation=30)
     plt.show()
 
-    # ETFs in focus
-    visualize_results_fund(df, "Metric", "ETF")
 
-    # ETFs in focus
-    visualize_results_fund(df, "Metric", "MF")
+def fund_barplot(df, focus_index):
+    for fund_type in ["ETF", "MF"]:
+        plt.figure(figsize=(40, 30))
+        for i, mn in enumerate(df[focus_index].unique()):
+            plt.subplot(3, 3, i + 1)
 
-    # With Model in focus
-    print_md("### Models")
-    plt.figure(figsize=(40, 30))
-    for i, mn in enumerate(df["Model Name"].unique()):
-        plt.subplot(3, 3, i + 1)
-
-        # Plot config
-        df_group = df[df["Model Name"] == mn]
-        lp = sns.lineplot(x="Metric", y="Score", hue="Fund Type", data=df_group)
-        lp.set_title(mn)
-        plt.xticks(rotation=30)
-    plt.show()
-
-    # ETFs in focus
-    visualize_results_fund(df, "Model Name", "ETF")
-
-    # ETFs in focus
-    visualize_results_fund(df, "Model Name", "MF")
-
-
-def visualize_results_fund(df, focus_index, fund_type):
-    plt.figure(figsize=(40, 30))
-    for i, mn in enumerate(df[focus_index].unique()):
-        plt.subplot(3, 3, i + 1)
-
-        # Plot config
-        df_group = df[(df[focus_index] == mn) & (df["Fund Type"] == fund_type)]
-        lp = sns.barplot(x="Metric" if focus_index == "Model Name" else "Model Name",
-                         y="Score", hue="Fund Type", data=df_group)
-        lp.set_title(mn)
-        plt.xticks(rotation=30)
-    plt.show()
+            # Plot config
+            df_group = df[(df[focus_index] == mn) & (df["Fund Type"] == fund_type)]
+            lp = sns.barplot(x="Metric" if focus_index == "Model Name" else "Model Name",
+                             y="Score", hue="Fund Type", data=df_group)
+            lp.set_title(mn)
+            plt.xticks(rotation=30)
+        plt.show()
 
 
 def print_md(string):
