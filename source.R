@@ -1,3 +1,11 @@
+# Install packages
+packages <- c("tidyr", "fpp", "dplyr", "fBasics", "ggplot2", "corrplot", 
+              "plotly", "ggalt", "rpart", "rattle", "rpart.plot", 
+              "RColorBrewer", "party", "MASS", "Hmisc", "splus2R", 
+              "PortfolioAnalytics", "PerformanceAnalytics", "zoo", 
+              "DEoptim", "ROI", "tidyverse", "tidyquant")
+install.packages(packages)
+
 # Loading libraries
 library(tidyr)
 library(fpp)
